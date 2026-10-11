@@ -1,0 +1,397 @@
+@import "tailwindcss";
+@import "@fontsource-variable/bricolage-grotesque/wght.css";
+@import "@fontsource-variable/instrument-sans/wght.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+/*
+  Palette is taken from the inside of a control cabinet:
+  switchgear grey, transformer navy, signal amber, and the
+  wire-colour codes used on terminal strips.
+*/
+:root {
+  --panel: #e6e9e4;
+  --paper: #f5f6f2;
+  --white: #ffffff;
+  --ink: #0b1722;
+  --ink-2: #14283a;
+  --ink-3: #1f3a52;
+  --steel: #55656f;
+  --line: #cfd4cd;
+  --amber: #ffb000;
+  --amber-deep: #c98600;
+  --blue: #1f56c8;
+  --live: #1a9a62;
+  --alarm: #d6372a;
+}
+
+@theme inline {
+  --color-panel: var(--panel);
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-steel: var(--steel);
+  --color-line: var(--line);
+  --color-amber: var(--amber);
+  --color-amber-deep: var(--amber-deep);
+  --color-blue: var(--blue);
+  --color-live: var(--live);
+  --color-alarm: var(--alarm);
+  --font-display: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Instrument Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  font-weight: 700;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.on-dark :focus-visible {
+  outline-color: var(--amber);
+}
+
+::selection {
+  background: var(--amber);
+  color: var(--ink);
+}
+
+/* Blueprint grid used behind hero and dark bands */
+.grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(11, 23, 34, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(11, 23, 34, 0.06) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+.grid-bg-dark {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Nameplate: the quote form is styled like a riveted equipment plate */
+.nameplate {
+  position: relative;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 14px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 30px 60px -20px rgba(11, 23, 34, 0.55);
+}
+.nameplate .rivet {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #5d7184, #243646 70%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+/* DIN rail terminal strip */
+.rail {
+  display: flex;
+  gap: 3px;
+  align-items: stretch;
+  padding: 10px 10px 0;
+  border-radius: 6px;
+  background: linear-gradient(#b9c0b8, #a5ada5);
+  box-shadow: inset 0 -6px 0 rgba(11, 23, 34, 0.18);
+}
+.terminal {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 74px;
+  background: #d9ddd6;
+  border-radius: 5px 5px 0 0;
+  border-bottom: 5px solid var(--wire, #1f56c8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 9px;
+  gap: 7px;
+  color: var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+.terminal .screw {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f1f2ee, #8a948b 80%);
+  position: relative;
+}
+.terminal .screw::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: 50%;
+  height: 2px;
+  background: rgba(11, 23, 34, 0.55);
+  transform: translateY(-50%) rotate(35deg);
+}
+.terminal .led {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8a948b;
+}
+.terminal .num {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1;
+  color: var(--steel);
+}
+
+/* One orchestrated moment: terminals energise left to right on load */
+@keyframes energise {
+  0% {
+    background: #8a948b;
+    box-shadow: none;
+  }
+  100% {
+    background: var(--amber);
+    box-shadow: 0 0 10px 2px rgba(255, 176, 0, 0.6);
+  }
+}
+.rail-live .terminal .led {
+  animation: energise 0.5s ease-out forwards;
+  animation-delay: calc(var(--i) * 90ms + 400ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .rail-live .terminal .led {
+    animation: none;
+    background: var(--amber);
+  }
+}
+
+/* Accordion marker */
+details > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+details[open] .faq-icon {
+  transform: rotate(45deg);
+}
+
+.container-x {
+  width: 100%;
+  max-width: 76rem;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+}
+@media (min-width: 768px) {
+  .container-x {
+    padding-inline: 2rem;
+  }
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 48px;
+  padding: 0.75rem 1.4rem;
+  border-radius: 10px;
+  font-weight: 650;
+  font-size: 1rem;
+  line-height: 1.1;
+  transition:
+    background-color 0.15s,
+    transform 0.1s,
+    box-shadow 0.15s;
+  cursor: pointer;
+  text-align: center;
+}
+.btn:active {
+  transform: translateY(1px);
+}
+.btn-amber {
+  background: var(--amber);
+  color: var(--ink);
+  box-shadow: 0 2px 0 var(--amber-deep);
+}
+.btn-amber:hover {
+  background: #ffc233;
+}
+.btn-ink {
+  background: var(--ink);
+  color: var(--paper);
+}
+.btn-ink:hover {
+  background: var(--ink-3);
+}
+.btn-ghost {
+  border: 1.5px solid currentColor;
+}
+.btn-ghost:hover {
+  background: rgba(127, 127, 127, 0.12);
+}
+
+/* Form fields inside the dark nameplate */
+.field {
+  width: 100%;
+  min-height: 48px;
+  padding: 0.7rem 0.9rem;
+  border-radius: 9px;
+  border: 1.5px solid #34506a;
+  background: #0f2132;
+  color: var(--paper);
+  font-size: 1rem;
+  transition: border-color 0.15s;
+}
+.field::placeholder {
+  color: #7f93a4;
+}
+.field:hover {
+  border-color: #4a6a88;
+}
+.field:focus {
+  outline: none;
+  border-color: var(--amber);
+  box-shadow: 0 0 0 3px rgba(255, 176, 0, 0.25);
+}
+.field[aria-invalid="true"] {
+  border-color: #ff7b6e;
+}
+.field-light {
+  background: var(--white);
+  color: var(--ink);
+  border-color: var(--line);
+}
+.field-light::placeholder {
+  color: #8a96a0;
+}
+
+.prose-ps p {
+  margin-block: 1em;
+  max-width: 68ch;
+}
+.prose-ps h2 {
+  font-size: 1.6rem;
+  margin-top: 2.2em;
+  margin-bottom: 0.4em;
+}
+.prose-ps ul {
+  list-style: disc;
+  padding-left: 1.3em;
+  margin-block: 1em;
+  max-width: 68ch;
+}
+.prose-ps li {
+  margin-block: 0.35em;
+}
+
+/* Keep room for the mobile sticky action bar */
+@media (max-width: 767px) {
+  body {
+    padding-bottom: 76px;
+  }
+}
+
+/* Panel-meter style result used by the tools */
+.readout {
+  background: var(--ink);
+  border-radius: 12px;
+  padding: 1rem 1.15rem;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 0 0 1px #1d3246;
+}
+
+/* Printable pages (checklists) */
+@media print {
+  header,
+  footer,
+  .no-print,
+  [data-sticky-actions] {
+    display: none !important;
+  }
+  body {
+    padding-bottom: 0 !important;
+    background: #fff;
+  }
+  .container-x {
+    max-width: none;
+  }
+}
+
+/* Tables inside articles */
+.prose-ps table {
+  width: 100%;
+  max-width: 68ch;
+  border-collapse: collapse;
+  margin-block: 1.25em;
+  font-size: 0.97rem;
+}
+.prose-ps th,
+.prose-ps td {
+  border: 1px solid var(--line);
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+.prose-ps th {
+  background: var(--panel);
+  font-weight: 650;
+}
+.prose-ps ol {
+  list-style: decimal;
+  padding-left: 1.4em;
+  margin-block: 1em;
+  max-width: 68ch;
+}
+.prose-ps blockquote {
+  max-width: 68ch;
+  margin-block: 1.25em;
+  padding: 0.85rem 1rem;
+  border-left: 4px solid var(--amber);
+  background: var(--panel);
+  border-radius: 0 8px 8px 0;
+}
+.prose-ps strong {
+  font-weight: 650;
+}
+.prose-ps h2 {
+  scroll-margin-top: 6rem;
+}

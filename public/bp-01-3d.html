@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BP-01 Burner Control Panel 3D</title>
+<style>
+:root{--bg1:#f4f5f6;--bg2:#d9dcdf;--ink:#16324a;--btn:#fff;--line:#b9c0c6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg1:#2a2f34;--bg2:#15181b;--ink:#e6edf3;--btn:#252a30;--line:#48515a}}
+:root[data-theme="dark"]{--bg1:#2a2f34;--bg2:#15181b;--ink:#e6edf3;--btn:#252a30;--line:#48515a}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(ellipse at 50% 35%,var(--bg1),var(--bg2));color:var(--ink);font:15px/1.4 "Segoe UI",system-ui,Helvetica,Arial,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+header{padding:14px 18px 0}
+h1{margin:0;font-size:20px;font-weight:650}
+header p{margin:2px 0 0;font-size:13px;opacity:.7}
+#stage{flex:1;min-height:0;position:relative;touch-action:none;cursor:grab}
+canvas{display:block;width:100%;height:100%}
+nav{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;padding:10px 12px 14px}
+button{font:inherit;color:var(--ink);background:var(--btn);border:1px solid var(--line);border-radius:6px;padding:7px 14px;cursor:pointer}
+button:hover{border-color:var(--ink)}button:focus-visible{outline:2px solid #1aa6c8;outline-offset:2px}
+button.on{background:var(--ink);color:var(--bg1)}
+</style></head>
+<body>
+<header><h1>CRETEK BP-01 Burner Control Panel</h1><p>400 × 600 × 250 mm · IP65 steel enclosure · 230 VAC / 24 VDC. Drag to rotate, scroll or pinch to zoom.</p></header>
+<div id="stage"></div>
+<nav id="nav"></nav>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const T=THREE,stage=document.getElementById('stage');
+const R=new T.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+R.setPixelRatio(Math.min(devicePixelRatio,2));R.shadowMap.enabled=true;R.shadowMap.type=T.PCFSoftShadowMap;
+R.outputEncoding=T.sRGBEncoding;R.toneMapping=T.ACESFilmicToneMapping;R.toneMappingExposure=.95;
+stage.appendChild(R.domElement);
+const S=new T.Scene(),cam=new T.PerspectiveCamera(30,1,.05,20);
+// studio environment for reflections
+(()=>{const c=document.createElement('canvas');c.width=1024;c.height=512;const x=c.getContext('2d');
+ const g=x.createLinearGradient(0,0,0,512);g.addColorStop(0,'#dfe6ec');g.addColorStop(.5,'#9aa3ab');g.addColorStop(1,'#3d4247');x.fillStyle=g;x.fillRect(0,0,1024,512);
+ try{x.filter='blur(10px)'}catch(e){}x.fillStyle='#fff';[[120,90,200,90],[430,60,220,70],[760,100,180,100],[300,230,120,40]].forEach(r=>x.fillRect(...r));
+ const t=new T.CanvasTexture(c);t.mapping=T.EquirectangularReflectionMapping;t.encoding=T.sRGBEncoding;
+ S.environment=new T.PMREMGenerator(R).fromEquirectangular(t).texture})();
+S.add(new T.HemisphereLight(0xffffff,0x888d92,.25));
+const key=new T.DirectionalLight(0xffffff,.8);key.position.set(.7,1.2,1.5);key.castShadow=true;key.shadow.mapSize.set(2048,2048);key.shadow.bias=-.0004;
+Object.assign(key.shadow.camera,{left:-.7,right:.7,top:.7,bottom:-.7});S.add(key);
+const floor=new T.Mesh(new T.PlaneGeometry(4,4),new T.ShadowMaterial({opacity:.25}));floor.rotation.x=-Math.PI/2;floor.position.y=-.36;floor.receiveShadow=true;S.add(floor);
+
+const G=new T.Group();S.add(G);
+const tex=(w,h,fn,srgb=true)=>{const c=document.createElement('canvas');c.width=w;c.height=h;fn(c.getContext('2d'),w,h);const t=new T.CanvasTexture(c);t.anisotropy=8;if(srgb)t.encoding=T.sRGBEncoding;return t};
+const rep=(t,n)=>{t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(n,n);return t};
+const blob=(c,x,y,r,v,a)=>{const g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,`rgba(${v},${v},${v},${a})`);g.addColorStop(1,`rgba(${v},${v},${v},0)`);c.fillStyle=g;c.fillRect(x-r,y-r,2*r,2*r)};
+const grit=(c,w,h,k)=>{const d=c.getImageData(0,0,w,h);for(let i=0;i<d.data.length;i+=4){const n=(Math.random()-.5)*k;d.data[i]+=n;d.data[i+1]+=n;d.data[i+2]+=n}c.putImageData(d,0,0)};
+// powder-coat orange peel (bump) and paint colour mottling + faint scratches
+const peel=rep(tex(512,512,(c,w,h)=>{c.fillStyle='#808080';c.fillRect(0,0,w,h);for(let i=0;i<9000;i++)blob(c,Math.random()*w,Math.random()*h,1.5+Math.random()*5,Math.random()<.5?255:0,.22);grit(c,w,h,26)},false),40);
+const mott=rep(tex(512,512,(c,w,h)=>{c.fillStyle='#f4f4f4';c.fillRect(0,0,w,h);for(let i=0;i<30;i++)blob(c,Math.random()*w,Math.random()*h,90+Math.random()*160,Math.random()<.5?255:225,.08)}),1);
+// brushed metal streaks and fine rubber/nylon grain
+const brushed=rep(tex(512,512,(c,w,h)=>{c.fillStyle='#808080';c.fillRect(0,0,w,h);for(let i=0;i<2400;i++){const y=Math.random()*h,v=Math.random()<.5?255:0;c.strokeStyle=`rgba(${v},${v},${v},${.05+Math.random()*.1})`;c.lineWidth=.6+Math.random();c.beginPath();c.moveTo(Math.random()*w,y);c.lineTo(Math.random()*w+80,y+(Math.random()-.5)*2);c.stroke()}},false),8);
+const grain=rep(tex(256,256,(c,w,h)=>{c.fillStyle='#808080';c.fillRect(0,0,w,h);grit(c,w,h,90)},false),30);
+const P=(c,r=.5,m=.1,o={})=>new T.MeshPhysicalMaterial(Object.assign({color:c,roughness:r,metalness:m},o));
+const paint=P(0x8f9397,.48,.18,{clearcoat:.15,clearcoatRoughness:.5,envMapIntensity:.55});
+const metal=P(0xd5d9dc,.6,1,{bumpMap:brushed,bumpScale:.7,roughnessMap:brushed}),dark=P(0x17181a,.55,.15,{bumpMap:grain,bumpScale:.5}),rubber=P(0x0d0d0e,.88,0,{bumpMap:grain,bumpScale:1});
+const add=(geo,mat,x,y,z,p=G)=>{const m=new T.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;p.add(m);return m};
+function rbox(w,h,d,b){const s=new T.Shape(),x=w/2-b,y=h/2-b;s.moveTo(-x,-y);s.lineTo(x,-y);s.lineTo(x,y);s.lineTo(-x,y);s.closePath();
+ const dd=Math.max(d-2*b,1e-4),g=new T.ExtrudeGeometry(s,{depth:dd,bevelEnabled:true,bevelThickness:b,bevelSize:b,bevelSegments:3,curveSegments:1});g.translate(0,0,-dd/2);return g}
+const rx=m=>(m.rotation.x=Math.PI/2,m);
+const px=v=>(v-350)*.00079,py=v=>(412-v)*.00079,FZ=.125;
+
+// enclosure, gasket, door, hinges
+add(rbox(.4,.6,.236,.004),paint,0,0,-.007);
+add(rbox(.394,.594,.004,.001),rubber,0,0,.1115);
+add(rbox(.39,.59,.014,.003),paint,0,0,.118);
+[-.2,.2].forEach(y=>{add(new T.CylinderGeometry(.0048,.0048,.05,20),P(0x2a2d31,.4,.8),.2,y,.1);add(new T.BoxGeometry(.012,.05,.003),P(0x2a2d31,.4,.8),.194,y,.1)});
+const rg=new T.SphereGeometry(.003,16,10),rivMat=P(0xe3e6e9,.25,1);
+const rivet=(x,y,z,p=G)=>{const m=add(rg,rivMat,x,y,z,p);m.scale.z=.5;return m};
+// door corner screws
+[[-.178,.278],[.178,.278],[-.178,-.278],[.178,-.278]].forEach(([x,y])=>{const s=rx(add(new T.CylinderGeometry(.0062,.0062,.003,24),P(0x9ea4a9,.3,.9),x,y,FZ));add(new T.BoxGeometry(.008,.0012,.001),dark,x,y,FZ+.0017)});
+
+// brand print
+const logo=(c,x,y,s)=>{c.save();c.translate(x,y);c.scale(s,s);c.lineWidth=20;c.strokeStyle='#1d3f5c';c.beginPath();c.arc(0,0,42,.75,5.55);c.stroke();c.fillStyle='#14a3c4';c.beginPath();c.arc(46,-10,12,0,7);c.fill();
+ c.fillStyle='#1d3f5c';c.font='bold 82px Segoe UI,Arial';c.textBaseline='middle';c.fillText('RETEK',70,0);c.fillStyle='#14a3c4';c.font='26px Segoe UI,Arial';try{c.letterSpacing='9px'}catch(e){}c.fillText('GROUP',76,50);c.restore()};
+const brand=new T.Mesh(new T.PlaneGeometry(.12,.04),new T.MeshBasicMaterial({transparent:true,map:tex(720,240,(c)=>logo(c,70,100,1.15))}));
+brand.position.set(px(215),py(162),FZ+.0004);G.add(brand);
+
+// detail plate (product label)
+const PW=.12,PH=.063,pg=new T.Group();pg.position.set(px(505),py(175),FZ);G.add(pg);
+add(rbox(PW,PH,.002,.0006),P(0xcfd3d6,.35,.9),0,0,.001,pg);
+const face=new T.Mesh(new T.PlaneGeometry(PW-.0012,PH-.0012),P(0xffffff,.38,.55,{map:tex(1024,540,(c,w,h)=>{
+ const g=c.createLinearGradient(0,0,w,h);g.addColorStop(0,'#e8eaec');g.addColorStop(.5,'#c9cdd1');g.addColorStop(1,'#dde0e3');c.fillStyle=g;c.fillRect(0,0,w,h);
+ for(let i=0;i<260;i++){c.fillStyle=`rgba(${Math.random()<.5?255:60},${Math.random()<.5?255:60},${Math.random()<.5?255:60},.05)`;c.fillRect(0,Math.random()*h,w,1+Math.random()*2)}
+ c.strokeStyle='rgba(40,50,60,.35)';c.lineWidth=3;c.strokeRect(22,22,w-44,h-44);
+ logo(c,110,115,1);c.fillStyle='#1b2733';c.textBaseline='alphabetic';
+ c.font='bold 118px Segoe UI,Arial';c.fillText('BP-01',70,330);c.font='bold 38px Segoe UI,Arial';c.fillText('BURNER CONTROL',420,300);c.fillText('SYSTEM',420,345);
+ c.font='34px Segoe UI,Arial';c.fillText('SERIAL: BP01-2026-0001',70,420);c.fillText('SUPPLY: 230 VAC   |   CONTROL: 24 VDC',70,475)})}));
+face.position.z=.0022;pg.add(face);
+[-1,1].forEach(a=>[-1,1].forEach(b=>rivet(a*(PW/2-.0075),b*(PH/2-.0075),.0028,pg)));
+
+// PID controller
+const pid=new T.Group();pid.position.set(px(352),py(278),FZ);G.add(pid);
+add(rbox(.109,.095,.006,.0012),P(0x121316,.35,.3),0,0,.003,pid);
+const scr=new T.Mesh(new T.PlaneGeometry(.1,.086),new T.MeshBasicMaterial({toneMapped:false,map:tex(600,516,(c,w,h)=>{
+ c.fillStyle='#07080a';c.fillRect(0,0,w,h);c.fillStyle='#e8eaed';c.font='bold 30px Segoe UI,Arial';c.fillText('▲ DELTA',40,50);c.font='24px Segoe UI,Arial';c.fillText('DTB4848CR',420,50);
+ c.shadowColor='#ff2a2a';c.shadowBlur=18;c.fillStyle='#ff3030';c.font='bold 150px "Courier New",monospace';c.fillText('125.4',130,210);
+ c.shadowColor='#3cff3c';c.fillStyle='#46ff46';c.font='bold 112px "Courier New",monospace';c.fillText('125.0',180,350);c.shadowBlur=0;
+ c.fillStyle='#9aa';c.font='24px Segoe UI,Arial';c.fillText('PV',40,150);c.fillText('SV',40,300);
+ ['PV/SV','SET','▼','▲'].forEach((t,i)=>{c.fillStyle='#2e6fd0';c.fillRect(40+i*135,410,120,70);c.fillStyle='#fff';c.font='bold 28px Segoe UI,Arial';c.textAlign='center';c.fillText(t,100+i*135,455);c.textAlign='left'})})}));
+scr.position.z=.0062;pid.add(scr);
+add(new T.PlaneGeometry(.1,.086),P(0xffffff,.04,0,{transparent:true,opacity:.1,clearcoat:1,clearcoatRoughness:0}),0,0,.0066,pid).castShadow=false;
+
+// lamps and buttons
+const lamp=(x,y,col,flat)=>{const g=new T.Group();g.position.set(px(x),py(y),FZ);G.add(g);
+ add(new T.TorusGeometry(.0172,.0026,14,48),flat?metal:P(0x2a2d30,.35,.8),0,0,.004,g);
+ rx(add(new T.CylinderGeometry(.0168,.0168,.008,40),dark,0,0,.004,g));
+ const mat=P(col,.18,0,{emissive:col,emissiveIntensity:flat?.02:.2,clearcoat:1,clearcoatRoughness:.05});
+ if(flat){rx(add(new T.CylinderGeometry(.0138,.0142,.014,40),mat,0,0,.011,g))}
+ else{const d=rx(add(new T.SphereGeometry(.0145,40,20,0,Math.PI*2,0,Math.PI/2),mat,0,0,.006,g));d.scale.y=.55}};
+const lab=(x,y,t,w)=>{const p=add(rbox(w,.017,.003,.0007),P(0x23262a,.5,.2),px(x),py(y),FZ+.0015);
+ const f=new T.Mesh(new T.PlaneGeometry(w-.001,.016),new T.MeshBasicMaterial({map:tex(624,200,(c,W,H)=>{c.fillStyle='#24272b';c.fillRect(0,0,W,H);c.fillStyle='#f2f2f2';c.font='bold 92px Segoe UI,Arial';c.textAlign='center';c.textBaseline='middle';c.fillText(t,W/2,H/2+5)})}));
+ f.position.z=.0016;p.add(f);[-1,1].forEach(a=>[-1,1].forEach(b=>rivet(a*(w/2-.0036)+px(x)-px(x),b*.0058,.0016,p)))};
+lamp(252,383,0x1fd060);lamp(354,383,0x1fd060);lamp(458,383,0xe52323);lamp(296,481,0x1fd060,1);lamp(413,481,0xe52323,1);
+lab(252,421,'POWER',.052);lab(354,421,'BURNER RUN',.052);lab(458,421,'FAULT',.052);lab(296,519,'START',.052);lab(413,519,'STOP',.052);
+
+// emergency stop
+const es=new T.Group();es.position.set(px(352),py(600),FZ);G.add(es);
+const lathe=(pts,mat,z)=>{const m=rx(add(new T.LatheGeometry(pts.map(p=>new T.Vector2(p[0],p[1])),48),mat,0,0,z,es));return m};
+lathe([[0,0],[.0445,0],[.0445,.005],[.041,.0072],[0,.0072]],P(0xf4c400,.4,.05,{clearcoat:.4}),0);
+const ring=new T.Mesh(new T.CircleGeometry(.0445,64),new T.MeshBasicMaterial({transparent:true,map:tex(512,512,(c,w,h)=>{
+ c.translate(w/2,h/2);c.fillStyle='#111';c.font='bold 40px Segoe UI,Arial';c.textAlign='center';
+ const arc=(s,a0,a1,rad,dir)=>{for(let i=0;i<s.length;i++){const a=a0+(a1-a0)*(i/(s.length-1));c.save();c.rotate(a);c.translate(0,dir*rad);if(dir>0)c.rotate(Math.PI);c.fillText(s[i],0,0);c.restore()}};
+ arc('EMERGENCY STOP',-.95,.95,-210,-1);arc('TURN TO RELEASE',-.85,.85,198,1)})}));
+ring.position.z=.0074;es.add(ring);
+lathe([[0,.0072],[.029,.0072],[.03,.014]],P(0x6e0d0d,.4,.1),0);
+lathe([[.026,.0],[.0335,.004],[.0345,.012],[.031,.021],[.021,.027],[.009,.0295],[0,.0298]],P(0xb81212,.3,.05,{clearcoat:.8,clearcoatRoughness:.12}),.012);
+add(new T.TorusGeometry(.019,.0016,10,48),P(0xa31414,.3,.05),0,0,.0425,es);
+
+// key-lock handle
+const hg=new T.Group();hg.position.set(px(155),py(425),FZ);G.add(hg);
+add(rbox(.036,.106,.007,.002),P(0x141517,.45,.3),0,0,.0035,hg);
+add(rbox(.026,.082,.013,.0035),P(0x2a2d31,.3,.4,{clearcoat:.6}),0,.009,.0125,hg);
+rx(add(new T.CylinderGeometry(.0078,.0078,.006,28),metal,0,-.035,.011,hg));
+add(new T.BoxGeometry(.0014,.0072,.001),dark,0,-.035,.0142,hg);
+
+// cable glands
+[216,280,349,417,482].forEach(x=>{const gx=px(x),gm=P(0x161719,.72,.05,{bumpMap:grain,bumpScale:1});
+ add(new T.CylinderGeometry(.0112,.0112,.01,6),gm,gx,-.305,0);
+ add(new T.CylinderGeometry(.0088,.0088,.016,28),gm,gx,-.318,0);
+ add(new T.CylinderGeometry(.0108,.0108,.016,28),gm,gx,-.332,0);
+ [-.326,-.332,-.338].forEach(y=>{const t=add(new T.TorusGeometry(.0108,.0007,8,28),gm,gx,y,0);t.rotation.x=Math.PI/2});
+ const d=add(new T.SphereGeometry(.0108,28,12,0,Math.PI*2,Math.PI/2,Math.PI/2),gm,gx,-.34,0);d.scale.y=.55});
+
+// back mounting slots
+[[-.16,.255],[.16,.255],[-.16,-.255],[.16,-.255]].forEach(([x,y])=>{add(new T.BoxGeometry(.012,.016,.002),dark,x,y-.003,-.1258);rx(add(new T.CylinderGeometry(.006,.006,.002,20),dark,x,y+.004,-.1258))});
+
+// orbit controls
+let yaw=.5,pitch=.12,dist=2.1,ty=yaw,tp=pitch,td=dist,spin=false;
+const place=()=>{cam.position.set(Math.sin(yaw)*Math.cos(pitch)*dist,Math.sin(pitch)*dist,Math.cos(yaw)*Math.cos(pitch)*dist);cam.lookAt(0,-.01,0)};
+const views={'Front':[0,.02],'Left':[-Math.PI/2,.02],'Right':[Math.PI/2,.02],'Back':[Math.PI,.02],'3/4 view':[.55,.14],'Underside':[.4,-.5]};
+const nav=document.getElementById('nav');
+const sb=document.createElement('button');
+Object.entries(views).forEach(([n,[a,b]])=>{const e=document.createElement('button');e.textContent=n;e.onclick=()=>{spin=false;sb.classList.remove('on');ty=a;tp=b;td=2.1};nav.appendChild(e)});
+sb.textContent='Auto-rotate';sb.onclick=()=>{spin=!spin;sb.classList.toggle('on',spin)};nav.appendChild(sb);
+const pts=new Map(),dd=()=>{const q=[...pts.values()];return Math.hypot(q[0][0]-q[1][0],q[0][1]-q[1][1])};
+stage.addEventListener('pointerdown',e=>{stage.setPointerCapture(e.pointerId);pts.set(e.pointerId,[e.clientX,e.clientY]);spin=false;sb.classList.remove('on')});
+stage.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId))return;const o=pts.get(e.pointerId);
+ if(pts.size===2){const a=dd();pts.set(e.pointerId,[e.clientX,e.clientY]);td=Math.min(4,Math.max(.9,td*a/dd()));return}
+ ty-=(e.clientX-o[0])*.008;tp=Math.max(-1.2,Math.min(1.2,tp+(e.clientY-o[1])*.006));pts.set(e.pointerId,[e.clientX,e.clientY])});
+['pointerup','pointercancel'].forEach(t=>stage.addEventListener(t,e=>pts.delete(e.pointerId)));
+stage.addEventListener('wheel',e=>{e.preventDefault();td=Math.min(4,Math.max(.9,td*(1+e.deltaY*.001)))},{passive:false});
+function size(){const w=stage.clientWidth,h=stage.clientHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.fov=w<h?48:30;cam.updateProjectionMatrix()}
+addEventListener('resize',size);size();
+(function loop(){if(spin)ty+=.006;yaw+=(ty-yaw)*.12;pitch+=(tp-pitch)*.12;dist+=(td-dist)*.12;place();R.render(S,cam);requestAnimationFrame(loop)})();
+</script></body></html>

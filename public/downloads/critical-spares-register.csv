@@ -1,0 +1,7 @@
+Machine / line,Location,Component description,Manufacturer,Full order or catalogue number,Hardware / firmware version,Qty installed,Qty in stock,Minimum stock level,Lead time if not in stock (days),Downtime cost per hour (R),Criticality (A / B / C),Lifecycle status (active / phase-out / discontinued),Last checked (date),Notes
+EXAMPLE: Packing line 2,Panel P2,PLC CPU,Siemens,6ES7 313-5BG04-0AB0,V3.3,1,0,1,15,25000,A,Check with manufacturer,2026-10-10,Replace this row with your own data
+,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,
