@@ -61,7 +61,7 @@ export function Header() {
         </Link>
 
         <nav aria-label="Main" className="hidden items-center gap-1 xl:flex">
-          {NAV.map((group) => (
+          {NAV.filter((group) => group.label !== "Resources").map((group) => (
             <div key={group.label} className="group relative">
               <Link
                 href={group.href}
@@ -84,15 +84,6 @@ export function Header() {
                 ))}
               </div>
             </div>
-          ))}
-          {FLAT.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="inline-flex min-h-[44px] items-center whitespace-nowrap rounded-md px-2.5 text-[0.95rem] font-medium text-[#d5dee6] hover:text-white"
-            >
-              {l.label}
-            </Link>
           ))}
         </nav>
 
