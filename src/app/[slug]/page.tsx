@@ -186,6 +186,16 @@ export default async function Page({ params }: PageProps<"/[slug]">) {
             <p className="mt-5 max-w-xl text-lg text-ink-2 sm:text-xl">{l.intro}</p>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              {l.demoUrl && (
+                <a
+                  href={l.demoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-amber"
+                >
+                  View live demo
+                </a>
+              )}
               <CallLink where={`page_${l.slug}`} className="btn btn-ink">
                 <PhoneIcon className="h-5 w-5" />
                 {SITE.phoneDisplay}

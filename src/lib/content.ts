@@ -26,6 +26,8 @@ export type Landing = {
   faqs: Faq[];
   /** Pre-selects the brand in the quote form */
   formBrand?: string;
+  /** External link to a live product demo */
+  demoUrl?: string;
   /** Short label used in the quote form + email subject */
   leadTopic: string;
 };
@@ -1111,6 +1113,7 @@ const services: Landing[] = [
     h1: "Predictive maintenance and plant monitoring",
     intro:
       "We have built a plant monitoring app that tracks the condition of your equipment and flags developing problems early, so you can plan the repair instead of reacting to a breakdown.",
+    demoUrl: "https://industrial-iot-0d2w.onrender.com/",
     content:
       "The traditional approach to industrial maintenance is reactive — wait for something to fail, then fix it. The cost of this approach extends far beyond the price of the replacement part: unplanned downtime disrupts production schedules, overtime labour costs escalate, and secondary damage can turn a simple failure into a major repair. Predictive maintenance offers a fundamentally different approach — using data from the equipment itself to identify developing faults before they cause a breakdown, so maintenance can be planned at a time and cost that suits your operation.\n\nOur plant monitoring app connects to the data sources that already exist in most industrial plants: PLCs, variable frequency drives, motors and instruments that continuously generate information about current, temperature, run hours and operational status. Rather than requiring a complete new sensor installation, we first assess what your existing equipment can communicate and build the monitoring around that. Where there are gaps in the available data, we advise on the most cost-effective additional sensors to install. The result is a monitoring solution tailored to your plant, not a generic platform you must adapt to.\n\nWhen the monitoring data shows a developing trend — a motor drawing increasing current, a drive running hotter than usual, a pump showing vibration changes — the app sends an alert to the people who need to know. This early warning gives you time to plan the repair: source the spare part before the failure, schedule the work during a planned stop, and have everything ready when the equipment is taken out of service. Our spares sourcing capability integrates directly with the monitoring — when an alert indicates a part is heading for failure, we can source the replacement before the breakdown occurs, closing the loop between detection and resolution.",
     coversLabel: "What the monitoring can cover",

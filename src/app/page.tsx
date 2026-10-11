@@ -137,6 +137,14 @@ export default function Home() {
               <Link href="/predictive-maintenance-plant-monitoring" className="btn btn-ink">
                 Explore plant monitoring
               </Link>
+              <a
+                href="https://industrial-iot-0d2w.onrender.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-amber"
+              >
+                View live demo
+              </a>
               <CallLink where="monitoring_home" className="btn btn-ghost text-ink">
                 <PhoneIcon className="h-5 w-5" />
                 Talk to an engineer
