@@ -25,6 +25,17 @@ export const NAV = [
     ],
   },
   { label: "Services", href: "/engineering-services", items: servicesList.map((s) => ({ label: s.name, href: `/${s.slug}` })) },
+  {
+    label: "Monitoring",
+    href: "/predictive-maintenance-plant-monitoring",
+    items: [
+      { label: "Plant monitoring app", href: "/predictive-maintenance-plant-monitoring" },
+      { label: "Predictive maintenance", href: "/predictive-maintenance-plant-monitoring" },
+      { label: "Burner control boxes (BP-01)", href: "/industrial-burner-control-boxes" },
+      { label: "Engineering services", href: "/engineering-services" },
+      { label: "Obsolescence risk check", href: "/resources/tools/obsolescence-risk-assessment" },
+    ],
+  },
   { label: "Industries", href: "/applications", items: industriesList.map((s) => ({ label: s.name, href: `/${s.slug}` })) },
   {
     label: "Resources",

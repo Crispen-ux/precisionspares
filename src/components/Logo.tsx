@@ -1,10 +1,13 @@
+import Image from "next/image";
+
 export function LogoMark({ size = 136, dark = false }: { size?: number; dark?: boolean }) {
   return (
-    <img
+    <Image
       src={dark ? "/images/whitelogo.png" : "/images/logo.png"}
       alt=""
       width={size}
       height={size}
+      priority
       className="shrink-0 object-contain"
     />
   );

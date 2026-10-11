@@ -31,6 +31,43 @@ function rateLimited(ip: string) {
   return recent.length > MAX_PER_WINDOW;
 }
 
+// ---- duplicate / replay guard (same part + phone within a short window) --
+const seen = new Map<string, number>();
+const DEDUP_MS = 2 * 60 * 1000;
+
+function isDuplicate(sig: string) {
+  const now = Date.now();
+  const prev = seen.get(sig);
+  if (prev && now - prev < DEDUP_MS) return true;
+  seen.set(sig, now);
+  if (seen.size > 5000) {
+    for (const [k, v] of seen) {
+      if (now - v >= DEDUP_MS) seen.delete(k);
+    }
+  }
+  return false;
+}
+
+// ---- reject cross-site posts (same-origin form submissions only) --------
+function originAllowed(request: Request) {
+  const origin = request.headers.get("origin");
+  if (!origin) return true; // some clients strip Origin; callers still face validation + rate limit
+  const host = request.headers.get("host");
+  const allowed = new Set<string>();
+  try {
+    allowed.add(new URL(SITE.url).origin);
+  } catch {
+    /* ignore malformed SITE.url */
+  }
+  if (host) {
+    allowed.add(`https://${host}`);
+    allowed.add(`http://${host}`);
+  }
+  return allowed.has(origin);
+}
+
+const MAX_BODY_BYTES = 20_000;
+
 const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) =>
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
@@ -157,6 +194,15 @@ async function sendWebhook(l: LeadInput) {
 }
 
 export async function POST(request: Request) {
+  const len = Number(request.headers.get("content-length") ?? 0);
+  if (len > MAX_BODY_BYTES) {
+    return NextResponse.json({ ok: false, error: "Request too large" }, { status: 413 });
+  }
+
+  if (!originAllowed(request)) {
+    return NextResponse.json({ ok: false, error: "Request blocked" }, { status: 403 });
+  }
+
   let json: unknown;
   try {
     json = await request.json();
@@ -177,6 +223,11 @@ export async function POST(request: Request) {
   // Bots: honeypot filled or form submitted impossibly fast. Pretend success.
   const tooFast = lead.startedAt ? Date.now() - lead.startedAt < 2500 : false;
   if (lead.website || tooFast) {
+    return NextResponse.json({ ok: true });
+  }
+
+  // Drop replayed or accidental double submissions before doing any work.
+  if (isDuplicate(`${lead.phone.toLowerCase()}|${lead.part.toLowerCase()}`)) {
     return NextResponse.json({ ok: true });
   }
 

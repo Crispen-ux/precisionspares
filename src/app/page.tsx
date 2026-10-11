@@ -23,6 +23,20 @@ const PROOF = [
   "Source and condition stated on every quote",
 ];
 
+const MONITOR_ROWS = [
+  { tag: "Motor M-12", metric: "Current", value: "14.8 A", state: "Watch", tone: "watch" },
+  { tag: "Drive D-04", metric: "Temperature", value: "68 °C", state: "Watch", tone: "watch" },
+  { tag: "Pump P-07", metric: "Run hours", value: "9 340 h", state: "Service due", tone: "due" },
+  { tag: "Fan F-02", metric: "Status", value: "Running", state: "OK", tone: "ok" },
+] as const;
+
+const MONITOR_POINTS = [
+  "Connects to the PLCs, drives and meters you already have",
+  "Alerts by WhatsApp or email when a value drifts",
+  "Run-hour and cycle counts to plan maintenance",
+  "We source the spare before the part fails",
+];
+
 const STEPS = [
   {
     t: "Send what you have",
@@ -91,6 +105,76 @@ export default function Home() {
               title="Get a quote"
               subtitle="Tell us what you need. An engineer replies with availability, lead time and price."
             />
+          </div>
+        </div>
+      </section>
+
+      {/* PLANT MONITORING APP */}
+      <section className="bg-paper py-16 md:py-24" aria-labelledby="monitor-h">
+        <div className="container-x grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+          <div>
+            <p className="inline-flex items-center gap-2 rounded-full border border-ink/15 bg-panel px-3.5 py-1.5 text-sm font-medium">
+              <span className="h-2 w-2 rounded-full bg-live" aria-hidden="true" />
+              Our plant monitoring app
+            </p>
+            <h2 id="monitor-h" className="mt-4 text-3xl sm:text-4xl lg:text-5xl">
+              Stop reacting to breakdowns. See them coming.
+            </h2>
+            <p className="mt-4 max-w-xl text-lg text-ink-2">
+              Our plant monitoring app watches the PLCs, drives and motors you already run, and warns you before a part fails. You plan the repair instead of losing production — and when an alert points to a part on its way out, we source the spare before it stops the line.
+            </p>
+            <ul className="mt-6 grid gap-x-6 gap-y-2 text-[0.97rem] sm:grid-cols-2">
+              {MONITOR_POINTS.map((p) => (
+                <li key={p} className="flex items-start gap-2">
+                  <svg viewBox="0 0 20 20" className="mt-1 h-4 w-4 shrink-0 text-live" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M4 10.5l4 4 8-9" />
+                  </svg>
+                  {p}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <Link href="/predictive-maintenance-plant-monitoring" className="btn btn-ink">
+                Explore plant monitoring
+              </Link>
+              <CallLink where="monitoring_home" className="btn btn-ghost text-ink">
+                <PhoneIcon className="h-5 w-5" />
+                Talk to an engineer
+              </CallLink>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-line bg-white p-5 shadow-[0_18px_40px_-18px_rgba(11,23,34,0.35)] sm:p-6">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-xs tracking-wide text-steel">PLANT MONITORING</span>
+              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-live">
+                <span className="h-2 w-2 rounded-full bg-live" aria-hidden="true" />
+                LIVE
+              </span>
+            </div>
+            <div className="mt-5 space-y-2.5">
+              {MONITOR_ROWS.map((r) => (
+                <div key={r.tag} className="flex items-center justify-between gap-3 rounded-xl border border-line bg-panel px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{r.tag}</p>
+                    <p className="text-sm text-steel">{r.metric}</p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-sm text-ink">{r.value}</span>
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-2.5 py-1 text-xs font-semibold text-ink">
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${r.tone === "ok" ? "bg-live" : r.tone === "watch" ? "bg-amber" : "bg-alarm"}`}
+                        aria-hidden="true"
+                      />
+                      {r.state}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-4 text-sm text-steel">
+              Illustration of the monitoring dashboard. Signals depend on what your equipment can report.
+            </p>
           </div>
         </div>
       </section>
