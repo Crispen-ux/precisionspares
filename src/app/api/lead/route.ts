@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { leadSchema, URGENCY_LABEL, type LeadInput } from "@/lib/lead-schema";
 import { SITE } from "@/lib/site";
+import { invoicingConfigured, invoicingPayloadTooLarge, quoteRequestKey, sendToInvoicing } from "@/lib/invoicing";
 
 /**
  * Lead capture endpoint.
@@ -8,6 +9,7 @@ import { SITE } from "@/lib/site";
  * Delivery channels (configure any combination in .env):
  *  - RESEND_API_KEY + LEAD_TO_EMAIL (+ LEAD_FROM_EMAIL): email notification and auto-reply
  *  - LEAD_WEBHOOK_URL: JSON POST (Zapier, Make, Google Sheets, HubSpot, a CRM, Slack ...)
+ *  - LEDGER_API_URL + LEDGER_API_KEY: save requests in the existing invoicing Leads inbox
  *
  * If nothing is configured in production the endpoint returns 503 so a lead is
  * never silently lost; the form then offers phone and WhatsApp instead.
@@ -31,15 +33,15 @@ function rateLimited(ip: string) {
   return recent.length > MAX_PER_WINDOW;
 }
 
-// ---- duplicate / replay guard (same part + phone within a short window) --
+// Cache successful deliveries only. A failed request must remain retryable.
 const seen = new Map<string, number>();
+const pending = new Map<string, Promise<boolean>>();
 const DEDUP_MS = 2 * 60 * 1000;
 
 function isDuplicate(sig: string) {
   const now = Date.now();
   const prev = seen.get(sig);
   if (prev && now - prev < DEDUP_MS) return true;
-  seen.set(sig, now);
   if (seen.size > 5000) {
     for (const [k, v] of seen) {
       if (now - v >= DEDUP_MS) seen.delete(k);
@@ -124,7 +126,7 @@ function buildHtml(l: LeadInput) {
 </div>`;
 }
 
-async function sendEmail(l: LeadInput) {
+async function sendEmail(l: LeadInput, requestKey: string) {
   const key = process.env.RESEND_API_KEY;
   const to = process.env.LEAD_TO_EMAIL;
   if (!key || !to) return false;
@@ -138,6 +140,7 @@ async function sendEmail(l: LeadInput) {
     headers: {
       Authorization: `Bearer ${key}`,
       "Content-Type": "application/json",
+      "Idempotency-Key": `quote-${requestKey}`,
     },
     body: JSON.stringify({
       from,
@@ -147,6 +150,7 @@ async function sendEmail(l: LeadInput) {
       html: buildHtml(l),
       text: buildText(l),
     }),
+    signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) {
     console.error("[lead] Resend notification failed", res.status, await res.text());
@@ -161,6 +165,7 @@ async function sendEmail(l: LeadInput) {
       headers: {
         Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": `quote-reply-${requestKey}`,
       },
       body: JSON.stringify({
         from,
@@ -168,6 +173,7 @@ async function sendEmail(l: LeadInput) {
         subject: `We have your request: ${l.part.slice(0, 60)}`,
         text: `Hi ${first},\n\nThanks for your request. Our engineers will review it and come back with availability, lead time and price.\n\nIf this is urgent, call us on ${SITE.phoneDisplay} or message us on WhatsApp: https://wa.me/${SITE.whatsapp}\n\nWhat you sent us:\n${l.part}\n\nPrecision Spares\n${SITE.url}`,
       }),
+      signal: AbortSignal.timeout(10_000),
     }).catch(() => undefined);
   }
   return true;
@@ -185,6 +191,7 @@ async function sendWebhook(l: LeadInput) {
       urgencyLabel: URGENCY_LABEL[l.urgency],
       ...l,
     }),
+    signal: AbortSignal.timeout(10_000),
   });
   if (!res.ok) {
     console.error("[lead] Webhook failed", res.status);
@@ -226,8 +233,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true });
   }
 
-  // Drop replayed or accidental double submissions before doing any work.
-  if (isDuplicate(`${lead.phone.toLowerCase()}|${lead.part.toLowerCase()}`)) {
+  if (invoicingConfigured() && invoicingPayloadTooLarge(lead)) {
+    return NextResponse.json({
+      ok: false,
+      error: "This request is too long. Please shorten the part details or call us to send your full parts list.",
+    }, { status: 422 });
+  }
+
+  const requestKey = quoteRequestKey(lead);
+  if (isDuplicate(requestKey)) {
     return NextResponse.json({ ok: true });
   }
 
@@ -242,13 +256,27 @@ export async function POST(request: Request) {
     );
   }
 
-  const results = await Promise.allSettled([sendEmail(lead), sendWebhook(lead)]);
-  const delivered = results.some((r) => r.status === "fulfilled" && r.value === true);
+  let delivery = pending.get(requestKey);
+  if (!delivery) {
+    delivery = (async () => {
+      const required = invoicingConfigured();
+      const [invoicing, ...otherChannels] = await Promise.allSettled([
+        sendToInvoicing(lead, requestKey), sendEmail(lead, requestKey), sendWebhook(lead),
+      ]);
+      // Once configured, invoicing must confirm storage before we show success.
+      return required
+        ? invoicing.status === "fulfilled" && invoicing.value === true
+        : otherChannels.some((r) => r.status === "fulfilled" && r.value === true);
+    })();
+    pending.set(requestKey, delivery);
+  }
+  const delivered = await delivery;
+  pending.delete(requestKey);
+  if (delivered) seen.set(requestKey, Date.now());
 
   if (!delivered) {
-    // Never lose a lead silently. Always log the full record.
-    console.log("[lead] UNDELIVERED LEAD", JSON.stringify(lead));
-    if (process.env.NODE_ENV === "production") {
+    console.error("[lead] Quote request not delivered", { requestKey });
+    if (process.env.NODE_ENV === "production" || invoicingConfigured()) {
       return NextResponse.json(
         {
           ok: false,

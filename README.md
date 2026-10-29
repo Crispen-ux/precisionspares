@@ -11,7 +11,7 @@ npm run build && npm start   # production
 ```
 
 ## Before launch (these decide whether leads reach you)
-1. **Lead delivery** in `.env.local`: set `RESEND_API_KEY` + `LEAD_TO_EMAIL` (+ `LEAD_FROM_EMAIL`), and/or `LEAD_WEBHOOK_URL` (Zapier, Make, Google Sheets, CRM). In production the form returns an error rather than silently losing a lead if nothing is configured.
+1. **Lead delivery** in `.env.local`: set `LEDGER_API_URL` + `LEDGER_API_KEY` (+ `LEDGER_SITE_ID=precision-spares`) to send website quote requests into the existing invoicing API. Follow [the integration setup](docs/invoicing-integration.md) to create a Precision Spares key. Email (`RESEND_API_KEY` + `LEAD_TO_EMAIL`) and `LEAD_WEBHOOK_URL` notifications remain optional. In production the form returns an error if delivery fails.
 2. **Tracking**: `NEXT_PUBLIC_GA_ID`, `NEXT_PUBLIC_GADS_ID` + `NEXT_PUBLIC_GADS_LEAD_LABEL`, `NEXT_PUBLIC_META_PIXEL_ID`. Events fired: `generate_lead` (quote submitted), `click_to_call`, `click_whatsapp`, `quote_form_start`. `/thank-you` is the conversion page.
 3. **Business details** in `src/lib/site.ts`: add the street address and email.
 4. **Photos**: images currently load from precisionspares.co.za (see `next.config.ts`). Replace with your own files in `/public` when you can.

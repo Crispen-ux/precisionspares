@@ -59,6 +59,7 @@ export function LeadForm({
   const [busy, setBusy] = useState(false);
   const [serverError, setServerError] = useState("");
   const startedAt = useRef<number>(0);
+  const requestId = useRef<string>("");
   const started = useRef(false);
   const stepHeading = useRef<HTMLHeadingElement>(null);
 
@@ -111,6 +112,7 @@ export function LeadForm({
     setErrors({});
     setBusy(true);
     try {
+      requestId.current ||= crypto.randomUUID();
       const res = await fetch("/api/lead", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -123,6 +125,7 @@ export function LeadForm({
           utm: captureAttribution(),
           website,
           startedAt: startedAt.current,
+          requestId: requestId.current,
         }),
       });
       const data = (await res.json().catch(() => ({}))) as {

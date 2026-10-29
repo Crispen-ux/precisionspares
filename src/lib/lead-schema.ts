@@ -13,6 +13,7 @@ const phone = z
   .string()
   .trim()
   .min(1, "Enter a phone number we can reach you on")
+  .max(64)
   .refine((v) => (v.match(/\d/g) ?? []).length >= 9, {
     message: "Enter a valid phone number, for example 061 548 4573",
   })
@@ -47,10 +48,14 @@ export const stepTwoSchema = z.object({
 });
 
 export const leadSchema = stepOneSchema.extend(stepTwoSchema.shape).extend({
+  /** One form instance; reused when the customer retries a failed submission. */
+  requestId: z.uuid().optional(),
   topic: z.string().trim().max(120).optional().default(""),
   page: z.string().trim().max(300).optional().default(""),
   referrer: z.string().trim().max(500).optional().default(""),
-  utm: z.record(z.string(), z.string().max(200)).optional().default({}),
+  utm: z.record(z.string().max(80), z.string().max(200))
+    .refine((v) => Object.keys(v).length <= 20, "Too many campaign parameters")
+    .optional().default({}),
   /** honeypot: real users never fill this */
   website: z.string().optional().default(""),
   /** ms timestamp when the form was first shown, used as a speed trap */
